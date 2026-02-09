@@ -1,0 +1,92 @@
+package com.bay4lly.secretrooms.client.model;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.block.BlockModelShaper;
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.PipeBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.client.ChunkRenderTypeSet;
+import net.neoforged.neoforge.client.event.ModelEvent;
+import net.neoforged.neoforge.client.model.data.ModelData;
+import net.neoforged.bus.api.SubscribeEvent;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+public class OneWayGlassModel extends SecretBlockModel {
+    private static final Minecraft MC = Minecraft.getInstance();
+    private static BakedModel glassModel;
+
+    public OneWayGlassModel(BakedModel model) {
+        super(model);
+    }
+
+    @Override
+    public ChunkRenderTypeSet getRenderTypes(@NotNull BlockState state, @NotNull RandomSource rand, @NotNull ModelData data) {
+        return ChunkRenderTypeSet.union(super.getRenderTypes(state, rand, data), ChunkRenderTypeSet.of(RenderType.cutout()));
+    }
+
+    @Override
+    protected List<BakedQuad> render(@NotNull BlockState mirrorState, @NotNull BlockState baseState, @NotNull BakedModel model, @org.jetbrains.annotations.Nullable Direction side, @NotNull RandomSource rand, @NotNull ModelData extraData, @org.jetbrains.annotations.Nullable RenderType renderType) {
+        Function<RenderType, List<BakedQuad>> superQuads = type -> getQuadsForSide(mirrorState, baseState, side, rand, extraData, type);
+        return this.getQuadsNotSolid(baseState, mirrorState, model, superQuads, rand, extraData, renderType);
+    }
+
+    private List<BakedQuad> getQuadsNotSolid(BlockState baseState, BlockState delegate, BakedModel delegateModel, Function<RenderType, List<BakedQuad>> superQuads, RandomSource rand, ModelData extraData, RenderType layer) {
+        List<BakedQuad> quads = new ArrayList<>();
+        if(layer == null || layer == RenderType.cutout()) {
+            quads.addAll(this.getGlassQuadsNotSolid(baseState, extraData));
+        }
+        if(layer == null || delegateModel.getRenderTypes(delegate, rand, extraData).contains(layer)) {
+            quads.addAll(this.getDelegateQuadsNotSolid(baseState, () -> superQuads.apply(layer)));
+        }
+        return quads;
+    }
+
+    private List<BakedQuad> getGlassQuadsNotSolid(BlockState baseState, ModelData extraData) {
+        List<BakedQuad> quads = new ArrayList<>();
+        if (glassModel == null) return quads;
+
+        for (Direction dir : Direction.values()) {
+            if (baseState.getValue(PipeBlock.PROPERTY_BY_DIRECTION.get(dir))) {
+                quads.addAll(glassModel.getQuads(Blocks.GLASS.defaultBlockState(), dir, MC.level.random, extraData, RenderType.cutout()));
+                if (dir == Direction.UP) {
+                    quads.addAll(glassModel.getQuads(Blocks.GLASS.defaultBlockState(), null, MC.level.random, extraData, RenderType.cutout()));
+                }
+            }
+        }
+        return quads;
+    }
+
+    private List<BakedQuad> getDelegateQuadsNotSolid(BlockState baseState, Supplier<List<BakedQuad>> superQuads) {
+        List<BakedQuad> quads = new ArrayList<>();
+        for (BakedQuad bakedQuad : superQuads.get()) {
+            Direction dir = bakedQuad.getDirection();
+            if (dir != null && !baseState.getValue(PipeBlock.PROPERTY_BY_DIRECTION.get(dir))) {
+                quads.add(bakedQuad);
+            }
+        }
+        return quads;
+    }
+
+    private List<BakedQuad> getQuadsForSide(BlockState mirrorState, BlockState baseState, Direction side, RandomSource rand, ModelData extraData, RenderType renderType) {
+        List<BakedQuad> quads = super.render(mirrorState, baseState, MC.getBlockRenderer().getBlockModel(mirrorState), side, rand, extraData, renderType);
+        super.render(mirrorState, baseState, MC.getBlockRenderer().getBlockModel(mirrorState), null, rand, extraData, renderType).stream()
+            .filter(q -> q.getDirection() == side)
+            .forEach(quads::add);
+        return quads;
+    }
+
+    @SubscribeEvent
+    public static void onModelsReady(ModelEvent.BakingCompleted event) {
+        glassModel = event.getModelManager().getModel(BlockModelShaper.stateToModelLocation(Blocks.GLASS.defaultBlockState()));
+    }
+}

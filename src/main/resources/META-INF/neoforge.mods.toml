@@ -1,0 +1,41 @@
+modLoader="javafml"
+loaderVersion="[4,)" #mandatory (24 is current forge version)
+license="MIT (Port License)"
+
+[[mods]]
+    modId="secretroomsmod"
+    version="1.21-1.0.0"
+    displayName="Secret Rooms: Reborn (1.21.1)"
+    logoFile="secretrooms.png"
+    authors="bay4lly (1.21.1 NeoForge Port), Wyn Price (Original)"
+    credits="Original mod by AbrarSyed & Wyn Price. Ported to 1.21.1 NeoForge with love by bay4lly."
+    displayTest="MATCH_VERSION"
+
+    description='''
+§bSecret Rooms - Modernized for 1.21.1 NeoForge§r
+
+This is an unofficial, high-performance port of the classic Secret Rooms mod. 
+Experience ultimate stealth with blocks that perfectly camouflage into their surroundings. 
+
+§6Key Features:§r
+* §eGhost Blocks§r - Walk through walls!
+* §eSecret Levers & Buttons§r - Hidden in plain sight.
+* §eOne-Way Glass§r - See them, before they see you.
+* §eSecret Clamber§r - The ultimate hidden vertical escape.
+
+Ported and optimized by §abay4lly§r for the Minecraft 1.21.1 NeoForge community.
+'''
+
+[[dependencies.secretroomsmod]]
+    modId="neoforge"
+    mandatory=true
+    versionRange="[21.0.1,)" #mandatory
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.secretroomsmod]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.21, 1.22)"
+    ordering="NONE"
+    side="BOTH"
